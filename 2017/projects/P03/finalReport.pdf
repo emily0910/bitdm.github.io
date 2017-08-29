@@ -1,0 +1,153 @@
+结题报告
+-----基于树结构神经网络的隐性话语关系识别
+	概述
+本实验提出了一种树结构神经网络来预测英语隐含话语关系的意义。 树结构神经网络也被称为递归神经网络，已经被证明在使用基于分析树的结构表示的自然语言中的建模组合中是强大的。
+通过整合解析树中的语义信息，树结构神经网络显示了其在捕获结构信息和组合语义方面的优越性，这对于深层语义问题，如情感分析和话语结构理解有意义。Penn话语树银行获得的实验结果表明，与传统的浅层特征分类器和连续深层语义模型相比，树结构神经网络更有效地预测话语文本之间的逻辑语义关系。
+	介绍
+话语关系描述了两段话语在逻辑上的联系。这些关系可以用来描述文本的高层次组织。各种自然语言处理（NLP）应用程序，如意见挖掘，摘要，论文质量分析，事件检测，甚至机器翻译都可以从此话语层面的信息中受益。当提供诸如“然而”和“因为”之类的显式连接词时，自动识别话语关系的任务是相对简单的。显性话语关系分类甚至可以被看作是一个词义消歧问题。然而，当这种连接词丢失时，识别变得更具挑战性。没有这些表面和强烈的线索的帮助，话语逻辑关系完全被隐藏在文本中的深刻意义所暗示。隐性话语关系识别是典型的深层语义建模与预测问题。
+隐性关系识别的传统方法重点是从每个段提取单词，并将相应的单词对设置为某些关系类型的触发。例如，像（冷，暖）这样的单词对可能会直接触发对比关系。词语对已经被证明有效地预测了隐含的话语关系。然而，单词对的单热表示是如此稀疏，这种浅层特征不能通过普通分类器达到可接受的收敛。更严重的是，当参数对抽象为数十个单词对时，单词顺序和文本结构可能会丢失。而话语关系识别绝对是一个组合语义问题，它取决于词语上下文合成的含义，而不是离散词级特征的组成。
+最近，分布式词汇表示在处理数据稀疏问题时已经显示出显着的优势，许多基于深度学习的模型正在引起句子表示的实质性兴趣。这些模型在诸如语言建模，机器翻译，释义检测，短文本分类等许多任务中取得了很好的成果。这些领域的突破不仅归功于深层神经网络的强大的特征选择和模型计算能力，而且还归功于其在这些承诺下的上下文的有效建模。例如，卷积神经网络（CNN）根据指定的滤波器从输入句子中提取连续的字符串，并通过汇集层捕获最有意义的特征。显然，CNN只是利用句子的本地顺序信息，忽略全局顺序信息以及结构语义信息。另一种典型的神经网络，即经常性神经网络（RNNs），使相同的网络单元的副本保留上下文的信息。他们能够将先前的知识连接到当前的预测，例如句子的前面的单词可能有助于理解本框架。为了获取长期的距离依赖关系，提出了长期存储网络（LSTM），其被明确地设计用于在理论上捕获具有任意距离的上下文顺序信息。简而言之，与传统的离散特征方法相比，这些顺序神经网络在建模自然语言时是顺序敏感的。尽管如此，我们都知道，自然语言句子中的意义至少以树型结构的形式递归地构造。虽然订单敏感的顺序模型在某种程度上涉及部分组合语义，但是在结构化组合语义学中，我们需要树结构模型的帮助。
+递归神经网络（RecNNs）是树状结构模型的典型图，已被证明在诸如情绪分类和语义相关性分析等任务中是优秀的。特别地，像RecNN这样的树结构模型是语言上有吸引力的选择，因为它们与句子结构的句法解释有关。
+在本文中，我们提出使用树结构神经网络来表示话语语义，并预测话语关系的意义。首先，每个参数的语义由网络沿分析树递归计算。然后，通过多层感知器（MLP）分类器聚合两个网络来预测关系类型。所提出的方法试图证明，与浅层特征分类器和顺序深层语义模型相比较，层次树结构网络可以更有效地预测话语文本之间的逻辑语义关系。
+从离散特征方法到顺序敏感序列模型，然后到分层RecNN，结构化程度越来越深。这意味着数据稀疏越来越严重。没有培训数据的扩展，我们采用预先训练的词嵌入，作为大多数深入的学习作品，替换文本段中的原始单词以对抗数据稀疏问题。
+树结构神经网络中另外需要考虑的是词汇模糊问题。由于许多单词具有多重感官，所以单词的上下文是确定其在给定句子中的实际意义所必需的。为了加强上下文的词义消歧能力，我们构建了一个基于双向序列的模型，可以根据其上下文来表示每个单词。
+Penn Discourse Tree Bank（PDTB）获得的实验结果表明，所提出的方法可以比以前的方法更好地识别话语层次关系。
+	背景
+我们的模型与递归神经网络和LSTM语言模型最相关（Mikolov等，2010）。 为了更好地理解提出的方法，本节介绍了上述两个方面的相关工作。
+	RNN：递归神经网络
+递归神经网络是（Socher等，2011）首先提出的模型。它计算可变长度和句法类型的短语的组合向量表示。然后，这些表示将被进一步用作为每个短语进行分类的特征。详细地说，当向组合模型给出n-gram时，将其解析为二叉树，并且对应于一个单词的每个叶节点被表示为向量。然后，递归神经模型将使用不同类型的组合函数以自下而上的方式计算父向量。
+3.1.1 标准递归神经网络
+递归神经网络模型中最经典的成员是标准递归神经网络（Socher et al。，2011a），可以从可变大小的矩阵中计算固定大小的表示。
+假设我们给出了一个由上一节所述的字矢量x =（x_1，x_2，...，x_m）列表组成的句子。该输入的二进制解析树以具有子项的父母的分支三元组的形式被形式化。树可以由任何句法解析器给出。每个孩子可以是树节点中的叶节点或非终结节点。例如，对于y→x_1 x_2的每个三元组，其中y是父节点，x_1〖x〗_2是其子代，我们将向量复合为公式（1）：
+
+y=f(W_e [x_1;x_2 ]+b),      (1)
+其中[x_1，x_2]只是两个孩子的连接，f是元素方面的激活函数，而W_e∈R^（d×2d）是我们想要学习的编码矩阵。父向量必须具有相同的维度以递归兼容，并用作下一个组合的输入。最后，最后的父向量，也称为根向量，可以被认为是句子的表示。然而，标准递归神经网络太简单，无法捕获深层结构语义信息。
+3.1.2 RNTN：递归神经张量网络
+为了捕获句子的深层结构语义信息，Socher等人提出了一种称为递归神经张量网络（RNTN）的新模型。 （Socher等，2013）。主要思想是对所有节点使用相同的基于张量的组合函数。对于每个三元组，如y→x_1 x_2，RNTN使用此定义来计算y：
+
+y=f([█(x_1@x_2 )]^T V^[1:d]  [█(x_1@x_2 )]),     (2)
+定义多个双线性形式的张量在哪里。类似地，y将在下一个三元递归中用作输入，最后我们将获得完整句子的表示。 RNTN是一个更强大的组合函数，它从给定的句子中表现得更好，并且构成聚合含义。
+ 
+图1：我们的模型的架构
+	LSTM模型
+提出了循环神经网络对序列数据进行建模（Mikolov等，2010），这是一个具有循环的网络，允许信息持续存在。 RNN语言模型的目标是学习将概率分配给句子的概率模型。 它通过预测给定历史的历史的文本中的下一个单词来做到这一点。 为解决长期依赖问题，萨斯等人提出了LSTM。 （Sak等人，2014）。 在LSTM语言模型中，可以从文本的前面部分获得该单词的每个隐藏状态。 因此，隐藏状态向量包含其上下文的信息。 因此，LSTM语言模型是解决词汇模糊问题的有效方法。 然而，当使用LSTM将长句压缩成单个表示时，一些重要的本地信息将丢失。
+	提出的方法
+我们提出的方法的架构如图1所示。在本节的下面，我们将说明拟议框架的细节。
+4.1 字嵌入层
+分布式单词表示（词嵌入）通常被设计为捕获由Hochreiter和Schmidhuber定义的单词之间的归因相似性（Hochreiter和Schmidhuber，1997）。主要思想是在嵌入空间中具有相同上下文的单词将是接近的。最近，各种作品还表明，词嵌入之间的向量偏移可以表示词之间隐藏的语义关系。基于这些观察，我们将单词的热表示形式转化为分布式表示。两个参数ARG1和ARG2的所有单词将被映射到低维向量表示中，这被视为网络的输入。通过这一层，我们可以充分利用每个单词的语义信息。此外，在低频字的情况下，把它们当作未知字（<UNK>），并设置他们一个随机向量，其具有相同的尺寸换句话说。
+4.2 带有双LSTM的参数嵌入
+如上所述，纯字嵌入面临词汇歧义问题。为了解决这个问题，我们建议使用Bi-LSTM对这两个参数进行编码。 LSTMs（Hochreiter和Schmidhuber，1997）被明确设计为避免长期依赖问题。记住长时间的信息实际上是他们的默认行为，而不是他们难以学习的东西！所有复发神经网络都具有神经网络重复模块链的形式。在标准RNN中，该重复模块将具有非常简单的结构，例如单个tanh层。 LSTM确实具有通过用称为门的结构仔细调节来移除或添加信息到单元状态的能力。盖茨可以选择让信息通过。它们由S形的神经网络层和点向乘法运算组成。门将决定将被遗忘的东西以及以下公式将被提醒：
+[█((c_t ) ̃@o_t@i_t@f_t )]=[█(tanh@σ@σ@σ)] T_(A,b) [█(x_t@h_(t-1) )],      (3)
+c_t=(c_t ) ̃×i_t+c_(t-1)×f_t,      (4)
+h_t=o_t×tanh⁡(c_t ),      (5)
+这里〖i〗_t，f_t，o_t表示输入门，分别记住门和输出门，T_（A，b）表示网络参数A和b下的一些变换。在训练足够迭代后，每个单元状态向量c_t将覆盖文本前面部分的信息。而论证中以下部分的信息对于解决词汇歧义问题也很重要。为了同时获取上下文信息，我们建议使用Bi-LSTM网络对参数进行编码。双LSTM网络由两个分离的LSTM网络组成。他们分别从相反方向的句子的开头和结尾编码相同的参数。在每一步t，我们可以得到相同状态的两个表示：（h_t）⃗和（h_t）⃖。当然，我们连接这两个表示：
+ 这里h_t包括句子中第t个词的上下文信息和语义信息。
+4.3 树结构神经网络
+感谢词嵌入层和Bi-LSTM层，我们可以得到参数中每个单词的语义表示。接下来，我们将整合句法树结构中的每个单词。
+4.3.1 获取句法结构
+运行树结构神经网络的第一步是获得每个句子的句法结构。我们在Penn Discourse Treebank 2.0（Prasad等人，2008）中使用手动注释的句法结构，并且我们不需要结构中的Pos，并且将词和括号作为树结构神经网络的输入。
+4.3.2 组成和分类
+为了整合树状结构，我们模仿了Shift-Reduce解析器的过程（Zhu et al。，2013）。同样，我们设置一个堆栈和一个缓冲区。堆栈和缓冲区是每个N个元素的数组（对于多达N个单词的句子），每个元素中的d维向量。对于每个选区分析器树，我们首先将其转换成二叉树。然后我们用通常的顺序遍历来线性化它。最后，我们把每个单词作为一个Shift转换，并将每个单词作为缩小转换。为了适应我们的模型，我们重新定义了Shift和Reduce操作：
+Shift：为了表示单词r_w，Shift操作意味着将r_w推入堆栈。
+减少：当我们运行Reduce操作时，我们从堆栈中弹出两个元素x_1和x_2，然后将它们与定义如下的组合函数进行集成：
+
+y=f([█(x_1@x_2 )]^T V^[1:d]  [█(x_1@x_2 )]+W[█(x_1@x_2 )]+b),   (7)
+其中V∈R^（2d×2d×d），W∈R^（d×2d）和b∈R^ d是树结构神经网络的参数，f是活动函数。
+给定文本段对（S_1，S_2）及其标签l，我们首先用树结构神经网络对S_1和S_2进行编码，得到S_1和S_2的表示r_1和r_2，然后连接r_1和r_2并将其发送到多层感知器（MLP）。更具体地说，通过汇集层获得的向量被馈送到完整的连接隐藏层以获得更抽象的表示。抽象表示进一步连接到输出层。对于分类任务，输出是不同类的概率，由完全连接层之后的softmax函数计算。
+4.4 模特训练
+由于所有级别的嵌入都被初始化好，我们将四个概率设置为相应的话语关系类型作为训练目标。给定文本段对及其标签l，训练目标是最小化预测和真实标签分布的交叉熵，定义为：
+L(S_1,S_2;l,l ̂ )=-∑_(j=1)^C▒〖l_j  log⁡〖((l_j ) ̂ ),〗      (8)〗
+其中l是地面真相标签的一个热表示，l是标签的预测概率，C是类号。
+为了最小化目标函数（8），我们使用AdaGrad的对角变量的随机梯度下降（SGD）。由于树结构神经网络的特殊性，我们没有使用批量计算，而是逐一训练细分。
+
+	实验
+在本节中，我们介绍了我们提出的树结构神经网络模型的实验，并在（Park和Cardie，2012），（Chen et al。，2016），（She et al。，2016）中进行了评估， （Ji和Eisenstein，2015）和（Ji et al。，2016）。我们比较了我们的实验结果与F1评分和准确性方面的最佳结果，并对结果差异进行了相关分析
+5.1数据集
+我们在实验中使用的数据集是Penn Discourse Treebank 2.0（Prasad et al。，2008），它是语篇关系中最大的注释语料库之一。它包含40,600个关系，它们是与Penn Treebank相同的2,312华尔街日报（WSJ）文章手动注释的。我们遵循PDTB 2.0的推荐部分分区，即使用2-20节进行培训，第21-22节进行测试，其他部分进行验证（Prasad等，2008）。为了与以前的工作（（Park和Cardie，2012））（Chen et al。，2016）（She et al。，2016）进行了比较，我们训练四个二进制分类器来确定每个顶级关系每个分类器，我们使用相等数量的正和负样本作为训练数据，并且从训练部分2-20中随机选择阴性样本。为了与以前的工作进行比较（Ji et al。，2016; Ji and Eisenstein，2015），我们构建了一个多分类器，并利用了训练集的所有语料库。
+5.2实验方案
+在这部分中，我们将主要介绍实验设置，包括基线和参数设置。
+5.2.1基线
+大多数关于一级话语关系预测的工作主要集中在“一对二”二进制分类设置上。同时，还有一些多类分类模型。我们将分别与两种方法进行比较。我们将比较以下方法：
+Park和Cardie（2012）在PDTB上构建了一组功能丰富的分类器，然后对以前提出的特征进行了系统的研究。我们比较他们发表的结果。
+Chen等人（2016）采用门控相关网络来捕获字对之间的语义交互，然后使用池层聚合这些语义交互，以选择最有信息的交互。而且他们在这个领域取得了最先进的技术
+她等人（2016）提出了一种使用分级深层语义学的相互学习方法。他们使用隐含话语关系的分布，论证的语义和短语和单词的共现。此外，他们在训练时扩大了语料库。我们将在相同的测试数据集上与他们进行比较。
+Ji和Eisenstein，（2015）计算实体提及的表示，并使用一种新的向下的组合通行证。
+Ji等人（2016）提出了一种用于联合建模序列的潜在可变循环神经网络架构，并且它们在话语关系的多重分类中获得了最先进的技术。
+Bi-LSTM我们构建了两个Bi-LSTM编码器来对两个文本段进行编码，然后连接并馈送到MLP进行关系检测。
+5.2.2参数设置
+对于我们模型中使用的单词嵌入的初始化，我们使用（Mikolov等人，2013）提供的50维预训练嵌入，并且嵌入在训练期间是固定的。 我们只能根据训练数据中出现的频率保留前20000个单词。 Bi-LSTM的中间表示也被设置为50.其他参数通过从[-0.1,0.1]中的均匀分布中随机抽样来初始化。
+对于我们提出的模型的其他超参数，我们采用在开发集上实现最佳性能的超参数，并为测试集保持相同的参数。 最终的超参数如表1所示。
+表1：实验中我们的模型的超参数。
+Word Embedding size	n = 50
+Initial learning rate	ρ= 1e-2
+Rate of L2 normalization	Λ= 1e-4
+Number of LSTM layers	3
+
+	结果
+首先，我们分别运行四个二进制分类器来区分最高层次的感觉与其他的分类。将结果与Park和Cardie（Park and Cardie，2012），Chen等（Chen et al。，2016），She等（She et al。，2016）进行了比较，建立了一套分类器，使用PDTB。精度测量的性能如表2所示。
+根据表2，我们的结果优于Park和Cardie（Park and Cardie，2012）。主要原因是语义嵌入和树结构神经网络的使用。分布式表示被证明比语义提取中的单热表示更加合适，因为嵌入可以明确地表达文本的深层语义，并避免数据稀疏问题。
+She等（She et al。，2016）和CNN模型的结果明显比我们的模型差。首先，他们的模型没有考虑顺序信息。其次，Bi-LSTM的使用可以有效地区分每个单词的不同语义。最重要的是，树结构是自然语言句子的本能结构，它使树结构神经网络具有有效捕获深层语义的能力。
+表2：二进制分类结果
+Model	Comparison	Contingency	Expansion	Temporal
+Park and Cardie, 2012	31.32	49.82	79.22	26.57
+She et al., 2016	35.9	52.5	77	18.2
+Chen et al., 2016(AAAI)	30.21	53.57	80.9	20.24
+Our work	32.4	52.7	81.2	31.1
+
+与Chen等人（Chen et al。，2016）的作品相比，只有扩展类比它们更好。 主要原因是语法结构的稀疏性，这将随着语料库的规模而增加。 更多的是我们使用的句法结构可能被错误地标记。 所有这些方面都可能影响我们的实验结果。
+为了验证我们的方法在多类别识别问题上的表现，多类分类结果在表3中以准确度和F1分数报告。我们将比较我们的结果与Ji等提出的结果（Ji et al。，2016 ），Ji和Eisenstein（Ji and Eisenstein，2015）和She et al（She et al。，2016），因为其他任务没有处理多类分类。
+
+表3：多类分类的结果
+Model	Accuracy	Macro F1
+Ji and Eisenstein, 2015	56.4	40
+Ji et al., 2016	59.5	42.3
+Our work	62.2	41.2
+虽然所提出的模型并不反映每个二进制分类的明显优点，但它优于多类指标的所有基准。 与二进制分类相比，多类分类更多地依赖于隐含话语关系分布。 结果证明，在对不平衡数据集进行建模时，我们的模型将更有效率。
+
+引用
+Emily Pitler, Annie Louis, and Ani Nenkova. 2009. Automatic sense prediction for implicit discourse relations in text. In Proceedings of the Joint Conference of the 47th Annual Meeting of the ACL and the 4th International Joint Conference on Natural Language Processing of the AFNLP: Volume 2-Volume 2, pages 683–691. Association for Computational Linguistics.
+
+Ji, Y., and Eisenstein, J. 2015. One vector is not enough: Entity-augmented distributed semantics for discourse relations. Transactions of the Association for Computational Linguistics 3:329–344.
+
+Bligaard T, Nørskov J K, Dahl S, et al. 2004 The Brønsted–Evans–Polanyi relation and the volcano curve in heterogeneous catalysis[J]. Journal of Catalysis, 224(1): 206-217.
+
+She X, Jian P, Zhang P, et al. 2016 Leveraging Hierarchical Deep Semantics to Classify Implicit Discourse Relations via Mutual Learning Method[C]//International Conference on Computer Processing of Oriental Languages. Springer International Publishing : 349-359.
+
+Collobert R. 2011 Deep Learning for Efficient Discriminative Parsing[C]//AISTATS, 15: 224-232.
+
+Kim Y. 2014 Convolutional neural networks for sentence classification[J]. arXiv preprint arXiv:1408.5882.
+
+Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. Neural computation, 9(8), 1735-1780.
+
+Tai, K. S., Socher, R., & Manning, C. D. (2015). Improved semantic representations from tree-structured long short-term memory networks. arXiv preprint arXiv:1503.00075.
+
+Socher, R., Perelygin, A., Wu, J. Y., Chuang, J., Manning, C. D., Ng, A. Y., & Potts, C. (2013, October). Recursive deep models for semantic compositionality over a sentiment treebank. In Proceedings of the conference on empirical methods in natural language processing (EMNLP) (Vol. 1631, p. 1642).
+
+Socher, R., Huang, E. H., Pennington, J., Ng, A. Y., & Manning, C. D. (2011, December). Dynamic Pooling and Unfolding Recursive Autoencoders for Paraphrase Detection. In NIPS (Vol. 24, pp. 801-809).
+
+Chen, J., Zhang, Q., Liu, P., Qiu, X., & Huang, X. (2016). Implicit discourse relation detection via a deep architecture with gated relevance network. In Proceedings of ACL.
+
+Chen, J., Zhang, Q., Liu, P., & Huang, X. (2016, February). Discourse Relations Detection via a Mixed Generative-Discriminative Framework. In AAAI (pp. 2921-2927).
+
+Bowman, S. R., Gauthier, J., Rastogi, A., Gupta, R., Manning, C. D., & Potts, C. (2016). A fast unified model for parsing and sentence understanding. arXiv preprint arXiv:1603.06021.
+
+Mikolov, T., Sutskever, I., Chen, K., Corrado, G. S., & Dean, J. (2013). Distributed representations of words and phrases and their compositionality. In Advances in neural information processing systems (pp. 3111-3119).
+
+Zhu, M., Zhang, Y., Chen, W., Zhang, M., & Zhu, J. (2013, August). Fast and Accurate Shift-Reduce Constituent Parsing. In ACL (1) (pp. 434-443).
+
+Park, J., & Cardie, C. (2012, July). Improving implicit discourse relation recognition through feature set optimization. In Proceedings of the 13th Annual Meeting of the Special Interest Group on Discourse and Dialogue (pp. 108-112). Association for Computational Linguistics.
+
+Marcu, D., & Echihabi, A. (2002, July). An unsupervised approach to recognizing discourse relations. In Proceedings of the 40th Annual Meeting on Association for Computational Linguistics (pp. 368-375). Association for Computational Linguistics.
+
+Biran, O., & McKeown, K. (2013, August). Aggregated Word Pair Features for Implicit Discourse Relation Disambiguation. In ACL (2) (pp. 69-73).
+
+Lan, M., Xu, Y., & Niu, Z. Y. (2013). Leveraging Synthetic Discourse Data via Multi-task Learning for Implicit Discourse Relation Recognition. In ACL (1) (pp. 476-485).
+
+Rutherford, A., & Xue, N. (2015, May). Improving the Inference of Implicit Discourse Relations via Classifying Explicit Discourse Connectives. In HLT-NAACL (pp. 799-808).
+
+Braud, C., & Denis, P. (2014, August). Combining natural and artificial examples to improve implicit discourse relation identification. In coling.
+
+Bengio, Y., Ducharme, R., Vincent, P., & Jauvin, C. (2003). A neural probabilistic language model. Journal of machine learning research, 3(Feb), 1137-1155.
+
+Yang, M., Cui, T., & Tu, W. (2015). Ordering-sensitive and semantic-aware topic modeling. arXiv preprint arXiv:1502.03630.
+
